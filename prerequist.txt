@@ -1,2 +1,4 @@
+- pip
 - Mosquito
 - paho mqtt client python
+- configparser

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 '''
 Created on Feb 4, 2016
 
@@ -30,17 +30,19 @@ mqttPort = 1883
 
 #Search the connected zwave devices on the z-way REST server
 def devFind(ip,port):
-    url = "http://"+ip+":"+port+"/ZWaveAPI/Run/Data/*"
+    url = "http://"+ip+":"+port+"/ZWaveAPI/Data/*"
     response = requests.post(url)
     data = response.json()
     devList = {}
-    
+
     if data != None:
         for i in data["devices"]:
             if i != "1":    #Device_1 is main controller
-                devList[i] = data["devices"][""+i+""]["data"]["deviceTypeString"]["value"]
-                
-        return (devList)
+                devList["id"] = i
+                devList["type"] = data["devices"][""+i+""]["data"]["deviceTypeString"]["value"]
+                devList["updateTime"] = data["devices"][""+i+""]["data"]["updateTime"]
+                print devList
+                return devList
 
 #zway server REST API get() to refresh the value of the zwave light switches.
 def devGet(id,type,ip,port):
