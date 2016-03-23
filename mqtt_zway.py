@@ -29,7 +29,11 @@ mqttIp = "192.168.1.131"
 mqttPort = 1883
 
 #Search the connected zwave devices on the z-way REST server
-def devFind(ip,port):
+def devlist_get(ip,port):
+    """
+
+    :rtype: object
+    """
     url = "http://"+ip+":"+port+"/ZWaveAPI/Data/*"
     response = requests.post(url)
     data = response.json()
@@ -40,9 +44,8 @@ def devFind(ip,port):
             if i != "1":    #Device_1 is main controller
                 devList["id"] = i
                 devList["type"] = data["devices"][""+i+""]["data"]["deviceTypeString"]["value"]
-                devList["updateTime"] = data["devices"][""+i+""]["data"]["updateTime"]
-                print devList
-                return devList
+        return devList
+
 
 #zway server REST API get() to refresh the value of the zwave light switches.
 def devGet(id,type,ip,port):
@@ -109,21 +112,7 @@ def on_message(client, userdata, msg):
 def on_subscribe(client, userdata, mid, granted_qos):
     print("Subscribed: "+str(mid)+" "+str(granted_qos))    
     
-# set up the mqtt client
-mqttc = mqtt.Client("openhab")
-mqttc.on_subscribe = on_subscribe
-mqttc.on_message = on_message
 
-mqttc.connect(mqttIp, mqttPort)
-mqttc.subscribe(topicOngoing, qos=1)
-mqttc.loop_start() #start new thread 
-
-
-while True:
-    try:
-        devPoll(zwayDev)
-    except Exception: 
-        pass
     
     
 

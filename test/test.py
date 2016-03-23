@@ -8,7 +8,7 @@ import requests
 import json
 import paho.mqtt.client as mqtt
 import time
-from zWavePoll import devPoll
+from mqtt_zway import devPoll
 
 '''Dict. of the zwave light switches (later it will be a mqtt json payload)
 '''

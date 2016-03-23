@@ -6,20 +6,21 @@ Created on Mar 1, 2016
 import requests
 import json
 
-def devFind(ip,port):
+def devlist_get(ip,port):
     url = "http://"+ip+":"+port+"/ZWaveAPI/Data/*"
     response = requests.post(url)
     data = response.json()
-    devList = {}
+    dev_list = dict()
+    dev_dict = dict()
 
+#MARCHE PAS revoir le return dict avec les dict des device trouve 
     if data != None:
         for i in data["devices"]:
             if i != "1":    #Device_1 is main controller
-                devList["id"] = i
-                devList["type"] = data["devices"][""+i+""]["data"]["deviceTypeString"]["value"]
-                devList["updateTime"] = data["devices"][""+i+""]["data"]["updateTime"]
-                print devList
-                return devList
+                dev_list["id"] = i
+                dev_list["type"] = data["devices"][""+i+""]["data"]["deviceTypeString"]["value"]
+            dev_dict["device_"+i+""] = dev_list
 
+            print dev_dict
 
-print(devFind("192.168.1.131","8083"))
+devlist_get("192.168.1.131","8083")
