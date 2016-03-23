@@ -9,53 +9,31 @@ import json
 import paho.mqtt.client as mqtt
 import time
 
-'''Dict. of the zwave light switchess (later it will be a mqtt json payload)
-'''
-zwayDev =    {
-              "device1":{"id":"2","type":"SwitchMultilevel","ip":"192.168.1.131","port":"8083"},
-              "device2":{"id":"3","type":"SwitchMultilevel","ip":"192.168.1.131","port":"8083"},
-              "device3":{"id":"4","type":"Basic","ip":"192.168.1.131","port":"8083"}
-              #"device4":{"id":"6","type":"SwitchMultilevel","ip":"192.168.1.131","port":"8083"}
-              }
-
-#MQTT topic to publish
-topicOutgoing = "openhab/zwave/lighting"
-topicOngoing = "zwave/lighting"
-
-#MQTT broker ip
-mqttIp = "192.168.1.131"
-
-#MQTT broker port
-mqttPort = 1883
-
 #Search the connected zwave devices on the z-way REST server
 def devlist_get(ip,port):
-    """
-
-    :rtype: object
-    """
     url = "http://"+ip+":"+port+"/ZWaveAPI/Data/*"
     response = requests.post(url)
     data = response.json()
-    devList = {}
+    dev_list = []
+    dev_dict = {}
 
     if data != None:
         for i in data["devices"]:
             if i != "1":    #Device_1 is main controller
-                devList["id"] = i
-                devList["type"] = data["devices"][""+i+""]["data"]["deviceTypeString"]["value"]
-        return devList
+                dev_dict["id"] = i
+                dev_dict["type"] = data["devices"][""+i+""]["data"]["deviceTypeString"]["value"]
+                dev_list.append(dict(dev_dict))
+        return dev_list
 
 
-#zway server REST API get() to refresh the value of the zwave light switches.
+#Update the zwave light switches values.
 def devGet(id,type,ip,port):
-    data = ""
     url = "http://"+ip+":"+port+"/ZWaveAPI/Run/devices["+id+"].instances[0]."+type+".Get()"
     response = requests.post(url)
     data = response.json()
     print("Get() id: "+id+ " Value: "+str(data))    
 
-#zway server REST API get() to read the value of the zwave light switches.
+#Read the device level value of the zwave light switches.
 def devData(id,type,ip,port):
     url = ("http://"+ip+":"+port+"/ZWaveAPI/Run/devices["+id+"].instances[0]."+type+".data.level.value")
     response = requests.post(url)
