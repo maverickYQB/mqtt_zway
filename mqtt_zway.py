@@ -10,31 +10,31 @@ import paho.mqtt.client as mqtt
 import time
 
 #Search the connected zwave devices on the z-way REST server
-def devlist_get(ip,port):
+def devdict_get(ip,port):
     url = "http://"+ip+":"+port+"/ZWaveAPI/Data/*"
     response = requests.post(url)
     data = response.json()
-    dev_list = []
+    temp_dict = {}
     dev_dict = {}
 
     if data != None:
         for i in data["devices"]:
             if i != "1":    #Device_1 is main controller
-                dev_dict["id"] = i
-                dev_dict["type"] = data["devices"][""+i+""]["data"]["deviceTypeString"]["value"]
-                dev_list.append(dict(dev_dict))
-        return dev_list
+                temp_dict["id"] = i
+                temp_dict["type"] = data["devices"][""+i+""]["data"]["deviceTypeString"]["value"]
+                dev_dict["device_"+i+""] = dict(temp_dict)
+        return dev_dict
 
 
 #Update the zwave light switches values.
-def devGet(id,type,ip,port):
+def dev_get(id,type,ip,port):
     url = "http://"+ip+":"+port+"/ZWaveAPI/Run/devices["+id+"].instances[0]."+type+".Get()"
     response = requests.post(url)
     data = response.json()
     print("Get() id: "+id+ " Value: "+str(data))    
 
 #Read the device level value of the zwave light switches.
-def devData(id,type,ip,port):
+def dev_data(id,type,ip,port):
     url = ("http://"+ip+":"+port+"/ZWaveAPI/Run/devices["+id+"].instances[0]."+type+".data.level.value")
     response = requests.post(url)
     value = response.json()
@@ -48,10 +48,10 @@ published on changed value to the MQTT broker.
 
 to do separer les def en class p-e car je call une function dans une fonction....
 '''
-def devPoll(devList):
-    oldPayload = []
-    newPayload = []
-    for key, value in devList.iteritems():
+def dev_poll(dev_dict):
+    old_payload = []
+    new_payload = []
+    for key, value in dev_dict.iteritems():
         print ("device: "+key)
         for i,j in value.iteritems():
             if (i == "ip"):
@@ -66,13 +66,13 @@ def devPoll(devList):
         time.sleep(0.1)
         payload = "nodeID: " +id+ " type: " +type+ " value: "+str(devData(id,type,ip,port))
         print (payload)
-        newPayload.append(payload)
+        new_payload.append(payload)
         time.sleep(0.1)
-    print ("new Payload: "+str(newPayload))
-    print ("old Payload: "+str(oldPayload))
-    if oldPayload != newPayload:
-        mqttc.publish(topicOutgoing, str(newPayload))
-    oldPayload = newPayload
+    print ("new Payload: "+str(new_payload))
+    print ("old Payload: "+str(old_payload))
+    if old_payload != new_payload:
+        mqttc.publish(topicOutgoing, str(new_payload))
+    old_payload = new_payload
     newPayload = []
     time.sleep(3)
 '''

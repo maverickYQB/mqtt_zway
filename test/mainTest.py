@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 Created on Feb 4, 2016
-
+as
 @author: popotvin
 '''
 
@@ -25,32 +25,44 @@ zway_port = config.get("ZWAY","zway_port")
 #Update a list of connected devices on the zway server
 dev_dict = mqtt_zway.devdict_get(zway_ip,zway_port)
 
-print outgoing_topic
-print ongoing_topic
-print mqtt_ip
-print mqtt_port
+print "Out_going topic: ", outgoing_topic
+print "On_going topic: " , ongoing_topic
+print "Mqtt addres: ", mqtt_ip
+print "Mqtt port: ", mqtt_port
 print zway_ip
 print zway_port
 print dev_dict
 
+# The callback for when the client receives a CONNACK response from the server.
+def on_connect(client, userdata, flags, rc):
+    print("COnnected to MQTT server "+str(rc))
 
+def on_subscribe(client, userdata, mid, granted_qos):
+    print("Subscribed: "+str(mid)+" "+str(granted_qos))
 
+# The callback for when a PUBLISH message is received from the server.
+def on_message(client, userdata, msg):
+    print(msg.topic+" "+str(msg.payload))
 
-#to be the main loop
-'''
-# set up the mqtt client
 mqttc = mqtt.Client("openhab")
 mqttc.on_subscribe = on_subscribe
 mqttc.on_message = on_message
 
-mqttc.connect(mqttIp, mqttPort)
-mqttc.subscribe(topicOngoing, qos=1)
+mqttc.connect(mqtt_ip, mqtt_port)
+mqttc.subscribe(ongoing_topic, qos=1)
 mqttc.loop_start() #start new thread
-
 
 while True:
     try:
-        devPoll(zwayDev)
+        print mqtt_zway.devdict_get(zway_ip,zway_port)
+        time.sleep(5)
+    except Exception:
+        pass
+'''
+
+while True:
+    try:
+        mqtt_zway.dev_poll(dev_dict)
     except Exception:
         pass
 '''
