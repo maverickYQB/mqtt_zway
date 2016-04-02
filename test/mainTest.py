@@ -5,7 +5,6 @@ as
 @author: popotvin
 '''
 
-import requests
 import config
 import mqtt_zway
 import json
@@ -17,6 +16,9 @@ outgoing_topic = config.get("TOPICS","outgoing_topic")
 ongoing_topic = config.get("TOPICS","ongoing_topic")
 mqtt_ip = config.get("MQTT_BROKER","mqtt_ip")
 mqtt_port = config.get("MQTT_BROKER","mqtt_port")
+mqtt_old_payload = []
+mqtt_new_payload = []
+payload = {}
 
 #ZWAY config
 zway_ip = config.get("ZWAY","zway_ip")
@@ -44,6 +46,7 @@ def on_subscribe(client, userdata, mid, granted_qos):
 def on_message(client, userdata, msg):
     print(msg.topic+" "+str(msg.payload))
 
+
 mqttc = mqtt.Client("openhab")
 mqttc.on_subscribe = on_subscribe
 mqttc.on_message = on_message
@@ -52,17 +55,30 @@ mqttc.connect(mqtt_ip, mqtt_port)
 mqttc.subscribe(ongoing_topic, qos=1)
 mqttc.loop_start() #start new thread
 
-while True:
-    try:
-        print mqtt_zway.devdict_get(zway_ip,zway_port)
-        time.sleep(5)
-    except Exception:
-        pass
-'''
 
 while True:
     try:
-        mqtt_zway.dev_poll(dev_dict)
+        for key, value in dev_dict.iteritems():
+            for i,j in value.iteritems():
+                if (i =="id"):
+                    id = j
+                elif(i == "type"):
+                    type = j
+            mqtt_zway.dev_get(zway_ip,zway_port,id,type)
+            time.sleep(0.1)
+            payload["device_id"] = str(id)
+            payload["type"] =  type
+            payload["value"] = str(mqtt_zway.dev_data(zway_ip,zway_port,id,type))
+            print "payload = ",payload
+            mqtt_new_payload.append(payload)
+            time.sleep(0.1)
+        print ("new Payload: "+str(mqtt_new_payload))
+        print ("old Payload: "+str(mqtt_old_payload))
+        if mqtt_old_payload != mqtt_new_payload:
+            mqttc.publish(outgoing_topic, str(mqtt_new_payload))
+        mqtt_old_payload = mqtt_new_payload
+        mqtt_new_payload = []
+        time.sleep(3)
+
     except Exception:
         pass
-'''
