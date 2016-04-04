@@ -51,7 +51,7 @@ def on_message(client, userdata, msg):
     else:
         print "Wrong topic sent"
 
-mqttc = mqtt.Client("rpi2")
+mqttc = mqtt.Client()
 mqttc.on_subscribe = on_subscribe
 mqttc.on_message = on_message
 mqttc.on_connect = on_connect
