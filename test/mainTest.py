@@ -96,4 +96,5 @@ while True:
         time.sleep(1)
 
     except Exception:
-        pass
+        print "exeption"
+        break

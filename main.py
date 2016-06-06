@@ -29,6 +29,7 @@ zway_port = config.get("ZWAY","zway_port")
 
 #Update a list of connected devices on the zway server
 dev_dict = mqtt_zway.devdict_get(zway_ip,zway_port)
+print dev_dict
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
@@ -83,4 +84,4 @@ while True:
         time.sleep(1)
 
     except Exception:
-        pass
+        break

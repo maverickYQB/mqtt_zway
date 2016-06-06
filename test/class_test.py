@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 '''
-Created on Feb 4, 2016
+Created on Juin 5th 2016
+    Test class
 
 @author: popotvin
 '''
@@ -18,9 +19,9 @@ class zway_devList:
         url = "http://"+self.ip+":"+self.port+"/ZWaveAPI/Data/*"
         response = requests.post(url)
         data = response.json()
-        if data is not None:
+        if data != None:
             for i in data["devices"]:
-                if i != "1":    # Device_1 is main controller
+                if i != "1":    #Device_1 is main controller
                     temp_dict["id"] = i
                     if "Multilevel" in data["devices"][""+i+""]["data"]["deviceTypeString"]["value"]:
                         temp_dict["type"] = "SwitchMultilevel"
@@ -29,24 +30,24 @@ class zway_devList:
                     dev_dict["device_"+i+""] = dict(temp_dict)
             return dict(dev_dict)
 
-# Update the zwave light switches values.
+#Update the zwave light switches values.
     def dev_get(self,dev_id,dev_type):
         self.dev_id = dev_id
         self.dev_type = dev_type
         url = "http://"+self.ip+":"+self.port+"/ZWaveAPI/Run/devices["+self.dev_id+"].instances[0]."+self.dev_type+".Get()"
-        # print "url %s" % (url)
+        #print "url %s" % (url)
         response = requests.post(url)
         data = response.json()
         return data
 
-# Read the device level value of the zwave light switches.
+#Read the device level value of the zwave light switches.
     def dev_value(self,dev_id,dev_type):
         self.dev_id = dev_id
         self.dev_type = dev_type
         url = ("http://"+self.ip+":"+self.port+"/ZWaveAPI/Run/devices["+self.dev_id+"].instances[0]."+self.dev_type+".data.level.value")
         response = requests.post(url)
         value = response.json()
-        # print ("value: ""\n""dev_id: "+dev_id+"\n""Value: "+str(value)+"\n")
+        #print ("value: ""\n""dev_id: "+dev_id+"\n""Value: "+str(value)+"\n")
         return str(value)
 
     def dev_set(self,dev_id,dev_type,dev_value):
@@ -57,23 +58,4 @@ class zway_devList:
         request = requests.post(url)
         data = request.json()
         return str(data)
-
-# Server ping simple response
-def server_test(ip, port):
-    s = socket.socket()
-    try:
-        s.connect((ip, int(port)))
-        return True
-    except Exception as e:
-        return False
-    finally:
-        s.close()
-
-
-
-    
-    
-
-
-       
 
