@@ -1,87 +1,79 @@
 #!/usr/bin/env python
 '''
-Created on Feb 4, 2016
-as
+Created on Mars 20 2016
+    Main program
 @author: popotvin
 '''
 
-import config
 import mqtt_zway
-import json
 import paho.mqtt.client as mqtt
 import time
-import datetime
+import traceback
 
-date_time = datetime.datetime.now()
+date_time = mqtt_zway.date_time
 
-#MQTT config
-outgoing_topic = config.get("TOPICS","outgoing_topic")
-ongoing_topic = config.get("TOPICS","ongoing_topic")
-mqtt_ip = config.get("MQTT_BROKER","mqtt_ip")
-mqtt_port = config.get("MQTT_BROKER","mqtt_port")
+# Main variables
 mqtt_old_payload = []
 mqtt_new_payload = []
 payload = {}
 
-#ZWAY config
-zway_ip = config.get("ZWAY","zway_ip")
-zway_port = config.get("ZWAY","zway_port")
+# MQTT config
+outgoing_topic = mqtt_zway.outgoing_topic
+ongoing_topic = mqtt_zway.ongoing_topic
+mqtt_ip = mqtt_zway.mqtt_ip
+mqtt_port = mqtt_zway.mqtt_port
+mqtt_client = mqtt_zway.mqtt_client
 
-#Update a list of connected devices on the zway server
-dev_dict = mqtt_zway.devdict_get(zway_ip,zway_port)
-print dev_dict
+# ZWAY config
+zway_ip = mqtt_zway.zway_ip
+zway_port = mqtt_zway.zway_port
 
-# The callback for when the client receives a CONNACK response from the server.
-def on_connect(client, userdata, flags, rc):
-    print "Connected to MQTT server "+ date_time.now().strftime("%Y-%m-%d %H:%M:%S")
-    client.subscribe(ongoing_topic)
+# list of connected devices on the zway server (device_id, device type, device level value)
+zway_devList = mqtt_zway.zway_devList(zway_ip,zway_port)
 
-# The callback for when a SUBCRIBED message is received to the server.
-def on_subscribe(client, userdata, mid, granted_qos):
-    print "Subscribed to MQTT topic: "+str(ongoing_topic)+" QOS = "+str(granted_qos), date_time.now().strftime("%Y-%m-%d %H:%M:%S")
-
-# The callback for when a PUBLISH message is received from the server.
-def on_message(client, userdata, msg):
-    #print (msg.topic+" "+str(msg.payload))
-    json_string = json.loads(msg.payload.replace("\'", '"'))
-    if msg.topic == ongoing_topic:
-        device_id = json_string["device_id"]
-        type =  json_string["type"]
-        value = json_string["value"]
-        mqtt_zway.dev_set(zway_ip,zway_port,device_id,type,value)
-    else:
-        print "Wrong topic sent"
-
-mqttc = mqtt.Client()
-mqttc.on_subscribe = on_subscribe
-mqttc.on_message = on_message
-mqttc.on_connect = on_connect
-
+# MQTT Client init
+mqttc = mqtt.Client(str(mqtt_client))
+mqttc.on_subscribe = mqtt_zway.on_subscribe
+mqttc.on_message = mqtt_zway.on_message
+mqttc.on_connect = mqtt_zway.on_connect
 mqttc.connect(mqtt_ip, mqtt_port)
-mqttc.loop_start() #start new thread
 
-#Main loop
-while True:
-    try:
-        for key, value in dev_dict.iteritems():
-            for i,j in value.iteritems():
-                if (i =="id"):
-                    id = j
-                elif(i == "type"):
-                    type = j
-            mqtt_zway.dev_get(zway_ip,zway_port,id,type)
+# Test zway and MQTT servers
+zway_test = mqtt_zway.server_test(zway_ip, zway_port)
+mqtt_test = mqtt_zway.server_test(mqtt_ip, mqtt_port)
+
+# Main loop
+if zway_test and mqtt_test:
+    print "ZWAY is running at: %s"% str(date_time)
+    print "MQTT is running at: %s"% str(date_time)
+    while True:
+        try:
+            mqttc.loop()
+            for key, value in zway_devList.dev_dict().iteritems():
+                for i,j in value.iteritems():
+                    if i == "id":
+                        dev_id = j
+                    elif i == "type":
+                        dev_type = j
+                zway_devList.dev_get(dev_id, dev_type)
+                payload["device_id"] = str(dev_id)
+                payload["type"] = str(dev_type)
+                payload["value"] = zway_devList.dev_value(dev_id, dev_type)
+                mqtt_new_payload.append(dict(payload))
+                time.sleep(0.1)
+            if mqtt_old_payload != mqtt_new_payload:
+                mqttc.publish(outgoing_topic, str(mqtt_new_payload))
+                #print "published to mQTT: %s" % mqtt_new_payload
+            mqtt_old_payload = mqtt_new_payload
+            mqtt_new_payload = []
             time.sleep(0.5)
-            payload["device_id"] = str(id)
-            payload["type"] =  type
-            payload["value"] = str(mqtt_zway.dev_value(zway_ip,zway_port,id,type))
-            mqtt_new_payload.append(dict(payload))
-            time.sleep(0.1)
-        if mqtt_old_payload != mqtt_new_payload:
-            mqttc.publish(outgoing_topic, str(mqtt_new_payload))
-            print "published to mQTT", mqtt_new_payload
-        mqtt_old_payload = mqtt_new_payload
-        mqtt_new_payload = []
-        time.sleep(1)
+        except Exception, e:
+            print traceback.print_exc()
+            pass
 
-    except Exception:
-        break
+elif not zway_test:
+    print "ZWAY server is offline"
+elif not mqtt_test:
+    print "MQTT server is Offline"
+
+
