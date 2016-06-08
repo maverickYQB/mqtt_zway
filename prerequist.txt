@@ -2,3 +2,6 @@
 - Mosquito
 - paho mqtt client python
 - configparser
+- mqtt_zway
+- z-way server running on a rpi with daughter board for z-waves devices
+
